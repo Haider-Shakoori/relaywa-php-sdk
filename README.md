@@ -172,16 +172,14 @@ The SDK uses a 30-second request timeout, 10-second connection timeout, and disa
 
 ## 9. Publishing note for maintainers
 
-**Important monorepo caveat:** Packagist reads the root `composer.json` of the Git repository. This package's `composer.json` is in `sdks/php`. Do **not** submit the existing `Haider-Shakoori/wa` repository URL directly and assume Packagist will publish this subdirectory.
-
-Before publication, prepare a dedicated package repository (or a verified split/mirror of `sdks/php`) whose **repository root** contains `composer.json`, `src/`, `README.md`, and `LICENSE`. Tag that repository (for example `v0.1.0`) and register its URL with Packagist. Validate Composer installability and the package archive before announcing a release. Keep the production RelayWA repository and runtime unchanged.
+This repository is the dedicated Composer package repository for `relaywa/sdk`. Its root contains `composer.json`, `src/`, `README.md`, and `LICENSE`. After CI validation, tag a release and register this repository on Packagist. Keep release tags and Packagist metadata aligned.
 
 ## Links
 
 - [RelayWA](https://relaywa.com)
 - [RelayWA API documentation](https://relaywa.com/api-docs)
-- [GitHub source](https://github.com/Haider-Shakoori/wa/tree/main/sdks/php)
-- [Issues](https://github.com/Haider-Shakoori/wa/issues)
+- [GitHub source](https://github.com/Haider-Shakoori/relaywa-php-sdk)
+- [Issues](https://github.com/Haider-Shakoori/relaywa-php-sdk/issues)
 
 ## License
 

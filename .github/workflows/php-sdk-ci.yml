@@ -1,0 +1,32 @@
+name: PHP SDK validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.1', '8.2', '8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: curl, json
+          tools: composer:v2
+      - name: Validate Composer metadata
+        run: composer validate --no-check-publish --strict
+      - name: PHP syntax check
+        run: php -l src/Client.php
+      - name: Install SDK dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Verify PSR-4 autoloading
+        run: php -r 'require "vendor/autoload.php"; if (!class_exists("RelayWA\\Client")) exit(1);'

@@ -24,7 +24,7 @@
   ],
   "homepage": "https://relaywa.com",
   "support": {
-    "issues": "https://github.com/Haider-Shakoori/wa/issues",
-    "source": "https://github.com/Haider-Shakoori/wa/tree/main/sdks/php"
+    "issues": "https://github.com/Haider-Shakoori/relaywa-php-sdk/issues",
+    "source": "https://github.com/Haider-Shakoori/relaywa-php-sdk"
   }
 }

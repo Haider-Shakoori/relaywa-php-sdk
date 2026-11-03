@@ -1,108 +1,116 @@
 # RelayWA PHP SDK
 
-Server-side PHP client for the [RelayWA](https://relaywa.com) WhatsApp API. PHP **8.1+**, **cURL**, and **JSON** are required. The package uses Composer PSR-4 autoloading and sends requests to `https://relaywa.com/api` by default.
+[![Latest Version](https://img.shields.io/packagist/v/relaywa/sdk.svg)](https://packagist.org/packages/relaywa/sdk)
+[![PHP Version](https://img.shields.io/packagist/php-v/relaywa/sdk.svg)](https://packagist.org/packages/relaywa/sdk)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-> **Publication status:** This package is being prepared for Packagist. `composer require relaywa/sdk` will work only **after** a Packagist package and installable release have been published. Do not assume it is available yet.
+PHP and Laravel client for the [RelayWA WhatsApp API](https://relaywa.com). Send WhatsApp messages, manage sessions, and work with webhooks from your own backend.
 
-## 1. Prerequisites
+- Send text messages over a QR-linked WhatsApp session
+- List and inspect sessions
+- Works in plain PHP and Laravel
+- Minimal dependencies: PHP 8.1+, `ext-curl`, `ext-json`
 
-- PHP 8.1 or newer, with the `curl` and `json` extensions enabled
-- [Composer](https://getcomposer.org/)
-- A RelayWA account and a valid **session key** for server-side API authentication
+> **Note:** RelayWA connects through QR-linked WhatsApp Web sessions. It is an unofficial integration, not the Meta WhatsApp Cloud API. See [Web API vs Cloud API](https://relaywa.com/guides/whatsapp-web-vs-cloud-api).
 
-Check your setup:
+> **Package availability:** The repository has been prepared for Packagist, but publication has not been verified. The Composer command below requires a published package and installable release.
 
-```bash
-php -v
-php -m
-composer --version
-```
-
-## 2. Install with Composer (after Packagist publication)
-
-In an existing PHP or Laravel application:
+## Installation
 
 ```bash
 composer require relaywa/sdk
 ```
 
-Until the package is publicly released, you can test it locally using a Composer `path` repository. From a project with a checkout of the RelayWA monorepo:
+Requirements: PHP 8.1 or newer, `ext-curl`, `ext-json`, and Composer.
+
+For local pre-release testing, from a project with a checkout of the RelayWA monorepo:
 
 ```bash
 composer config repositories.relaywa path "/absolute/path/to/wa/sdks/php"
 composer require "relaywa/sdk:@dev"
 ```
 
-This local installation is for testing only and is **not** the public Packagist release.
+## Get your key
 
-## 3. Configure credentials
+1. Create an account at [relaywa.com](https://relaywa.com).
+2. Link a WhatsApp number by scanning its QR code ([how QR linking works](https://relaywa.com/whatsapp-api-qr-code)).
+3. Create an API key for your session in the dashboard.
 
-Get your session key from your RelayWA account. Set `RELAYWA_SESSION_KEY` as a server environment variable; never put it in browser JavaScript, mobile applications, committed `.env` files, or logs.
+Keep the key in a server-side environment variable. Never commit credentials or expose them in browser code.
 
-**Windows CMD**
-
-```cmd
-set "RELAYWA_SESSION_KEY=your-session-key"
-```
-
-**PowerShell**
-
-```powershell
-$env:RELAYWA_SESSION_KEY = "your-session-key"
-```
-
-**Linux / macOS**
-
-```bash
-export RELAYWA_SESSION_KEY="your-session-key"
-```
-
-## 4. First request: list sessions (read-only)
-
-Create `example.php`:
+## Quick start (plain PHP)
 
 ```php
 <?php
-declare(strict_types=1);
 
 require __DIR__ . '/vendor/autoload.php';
+
+use RelayWA\Client;
 
 $key = getenv('RELAYWA_SESSION_KEY');
 if ($key === false || trim($key) === '') {
     throw new RuntimeException('Set RELAYWA_SESSION_KEY first');
 }
 
-$relaywa = new \RelayWA\Client($key);
+$relaywa = new Client($key);
 
 try {
-    $sessions = $relaywa->sessions();
-    print_r($sessions);
+    // List sessions (read-only)
+    print_r($relaywa->sessions());
+
+    // Sends a real WhatsApp message when the session is connected
+    $result = $relaywa->sendText('12025550123', 'Hello from RelayWA');
+    print_r($result);
 } catch (RuntimeException $e) {
     fwrite(STDERR, 'RelayWA request failed: ' . $e->getMessage() . PHP_EOL);
     exit(1);
 }
 ```
 
-Run:
+Run it:
 
 ```bash
-php example.php
+RELAYWA_SESSION_KEY=your_key php example.php
 ```
 
-This is a live **read-only** request. It does not connect, restart, or disconnect a WhatsApp session.
+Only run the send example with a connected session and a recipient who expects your message. Use a country code and digits-only phone number.
 
-## 5. Send a text message (live operation)
+## Laravel
 
-Only run this once your WhatsApp session is connected and you have permission to message the recipient:
+Add the key to your deployment environment or `.env` (never commit the file):
+
+```dotenv
+RELAYWA_SESSION_KEY=your_key
+```
+
+Register it in `config/services.php`:
 
 ```php
-$result = $relaywa->sendText('12025550123', 'Hello from RelayWA');
-print_r($result);
+'relaywa' => [
+    'session_key' => env('RELAYWA_SESSION_KEY'),
+],
 ```
 
-A successful request can send a real WhatsApp message. Avoid automatically retrying sends after ambiguous network timeouts; the first attempt might already have been processed.
+Use the client from server-side application code:
 
-## 6. More PHP examples
+```php
+<?php
+
+use RelayWA\Client;
+
+class OrderNotifier
+{
+    public function orderShipped(string $phone, string $orderNumber): void
+    {
+        $relaywa = new Client((string) config('services.relaywa.session_key'));
+        $relaywa->sendText($phone, "Your order #{$orderNumber} has shipped.");
+    }
+}
+```
+
+For queues and retries, read [WhatsApp API order notifications in Laravel](https://relaywa.com/blog/laravel-whatsapp-api-order-notifications). After changing Laravel environment settings in production, refresh the config cache as appropriate.
+
+## More examples
 
 **Session details and chats (read-only)**
 
@@ -111,7 +119,7 @@ $details = $relaywa->session('your-session-id');
 $chats = $relaywa->sessionChats('your-session-id');
 ```
 
-**Send an image by HTTPS URL (live operation)**
+**Send an image by HTTPS URL**
 
 ```php
 $result = $relaywa->sendImage([
@@ -122,30 +130,17 @@ $result = $relaywa->sendImage([
 ]);
 ```
 
-The media URL must be HTTPS and the size must be within the SDK's per-media limit.
+The media URL must be HTTPS and the size must fit the SDK's limit.
 
-**Laravel example**
+## Webhooks
 
-Set `RELAYWA_SESSION_KEY` in your deployment's environment configuration, then use the client from server-side application code:
+RelayWA supports webhook endpoints for events such as incoming messages and session changes. Verify the signature before trusting an incoming request and handle repeated deliveries idempotently.
 
-```php
-use RelayWA\Client;
+**Important:** This SDK does not currently provide a webhook-signature verification helper. Consult the [webhook documentation](https://relaywa.com/whatsapp-webhooks) for the exact header name, signature encoding, signed payload, and secret configuration before implementing verification. Do not assume a raw hex HMAC or a particular header name.
 
-$relaywa = new Client((string) config('services.relaywa.session_key'));
-$sessions = $relaywa->sessions();
-```
+After verification, decode the JSON and store an event identifier to avoid processing duplicate deliveries.
 
-In `config/services.php`, add:
-
-```php
-'relaywa' => [
-    'session_key' => env('RELAYWA_SESSION_KEY'),
-],
-```
-
-Do not call the API from Blade/browser code. Laravel's config cache may need refreshing after deployment environment changes.
-
-## 7. Supported methods
+## Supported methods
 
 | Category | Methods |
 | --- | --- |
@@ -155,32 +150,44 @@ Do not call the API from Blade/browser code. Laravel's config cache may need ref
 | Session data | `sessionQrCode`, `sessionStatistics`, `sessionLogs`, `sessionMessages`, `sessionMessage`, `sessionContacts`, `sessionChats`, `sessionGroups` |
 | Webhooks | `webhooks`, `createWebhook`, `updateWebhook`, `deleteWebhook`, `webhookDeliveries` |
 
-The methods return decoded JSON arrays. Webhook endpoint management is supported; this PHP SDK does **not** currently expose a webhook-signature verification helper.
+Methods return decoded JSON arrays. Requests target `https://relaywa.com/api` by default.
 
-## 8. Troubleshooting
+## Safe sending tips
 
-| Problem | What to check |
+- Message people who expect to hear from you, and make opting out easy.
+- Increase volume gradually on a new number rather than sending large bursts.
+- Avoid repetitive bulk messaging; personalize where appropriate.
+- Do not retry failed sends in a tight loop.
+- Do not automatically retry ambiguous timeouts: a send might have succeeded despite the missing response.
+
+## Error handling
+
+The client throws `RuntimeException` for request failures. Catch exceptions and log only non-sensitive details.
+
+| Problem | Fix |
 | --- | --- |
-| Composer cannot find `relaywa/sdk` | The package may not yet be published on Packagist; use the local path repository for pre-release testing. |
-| `Class "RelayWA\\Client" not found` | Install Composer dependencies and include `vendor/autoload.php`. |
-| `Call to undefined function curl_init()` | Enable the PHP cURL extension for the PHP runtime executing your app. |
-| `Session key required` | Set `RELAYWA_SESSION_KEY` in the server process environment. |
-| `RelayWA HTTP 401` or `403` | Verify the session key and account permissions without sharing the key. |
-| `RelayWA transport failure` | Check HTTPS connectivity, DNS, firewall, and timeouts. |
+| Composer cannot find `relaywa/sdk` | Check Packagist publication and release status; use a local path repository for pre-release testing. |
+| `Class "RelayWA\\Client" not found` | Run `composer install` and include `vendor/autoload.php`. |
+| Request rejected (401/403) | Check the key, account permissions, and session connection. |
+| No response / `curl_init()` missing | Confirm `ext-curl` is enabled and check DNS, HTTPS connectivity, and firewall settings. |
+| Session key required | Set `RELAYWA_SESSION_KEY` in the server environment. |
 
-The SDK uses a 30-second request timeout, 10-second connection timeout, and disables HTTP redirects. API errors are thrown as `RuntimeException`. Never log credentials or automatically retry uncertain message sends.
+The SDK uses a 30-second request timeout, 10-second connection timeout, and disables HTTP redirects.
 
-## 9. Publishing note for maintainers
+## Documentation and links
 
-This repository is the dedicated Composer package repository for `relaywa/sdk`. Its root contains `composer.json`, `src/`, `README.md`, and `LICENSE`. After CI validation, tag a release and register this repository on Packagist. Keep release tags and Packagist metadata aligned.
+- Website: <https://relaywa.com>
+- API documentation: <https://relaywa.com/api-docs>
+- Pricing: <https://relaywa.com/pricing>
+- Help center: <https://relaywa.com/help>
+- Webhooks guide: <https://relaywa.com/whatsapp-webhooks>
+- Source: <https://github.com/Haider-Shakoori/relaywa-php-sdk>
+- Issues: <https://github.com/Haider-Shakoori/relaywa-php-sdk/issues>
 
-## Links
+## Maintainer publishing note
 
-- [RelayWA](https://relaywa.com)
-- [RelayWA API documentation](https://relaywa.com/api-docs)
-- [GitHub source](https://github.com/Haider-Shakoori/relaywa-php-sdk)
-- [Issues](https://github.com/Haider-Shakoori/relaywa-php-sdk/issues)
+After CI validation, tag an installable release and register this repository on Packagist. Keep tags and package metadata aligned.
 
 ## License
 
-MIT.
+MIT. See [LICENSE](LICENSE).

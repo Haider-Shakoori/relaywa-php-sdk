@@ -1,6 +1,6 @@
 {
   "name": "relaywa/sdk",
-  "description": "RelayWA PHP SDK for WhatsApp messaging, sessions, and webhooks",
+  "description": "PHP 8.1+ and Laravel SDK for RelayWA QR-linked WhatsApp messaging, sessions and webhooks",
   "type": "library",
   "license": "MIT",
   "require": {
@@ -20,7 +20,11 @@
     "php",
     "sdk",
     "webhooks",
-    "messaging"
+    "messaging",
+    "laravel",
+    "order-notifications",
+    "whatsapp-notifications",
+    "whatsapp-web-api"
   ],
   "homepage": "https://relaywa.com",
   "support": {

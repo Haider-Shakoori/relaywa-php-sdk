@@ -13,7 +13,7 @@ PHP and Laravel client for the [RelayWA WhatsApp API](https://relaywa.com). Send
 
 > **Note:** RelayWA connects through QR-linked WhatsApp Web sessions. It is an unofficial integration, not the Meta WhatsApp Cloud API. See [Web API vs Cloud API](https://relaywa.com/guides/whatsapp-web-vs-cloud-api).
 
-> **Package availability:** The repository has been prepared for Packagist, but publication has not been verified. The Composer command below requires a published package and installable release.
+> **Published package:** [relaywa/sdk on Packagist](https://packagist.org/packages/relaywa/sdk) (initial v0.1.0 release). Install with Composer as shown below.
 
 ## Installation
 
@@ -23,7 +23,7 @@ composer require relaywa/sdk
 
 Requirements: PHP 8.1 or newer, `ext-curl`, `ext-json`, and Composer.
 
-For local pre-release testing, from a project with a checkout of the RelayWA monorepo:
+For contributors testing local source rather than the published release, from a project with a checkout of the RelayWA monorepo:
 
 ```bash
 composer config repositories.relaywa path "/absolute/path/to/wa/sdks/php"
@@ -74,6 +74,10 @@ RELAYWA_SESSION_KEY=your_key php example.php
 ```
 
 Only run the send example with a connected session and a recipient who expects your message. Use a country code and digits-only phone number.
+
+## Build a real Laravel order notification
+
+Follow the [complete Laravel order-shipped walkthrough](examples/laravel-order-notifications/README.md), which includes consent checking, a queued job, cautious timeout handling, and offline tests. The example does not contact production during CI. You can inspect the [Laravel job source](examples/laravel-order-notifications/app/Jobs/SendOrderShippedWhatsApp.php) before using it.
 
 ## Laravel
 
@@ -166,7 +170,7 @@ The client throws `RuntimeException` for request failures. Catch exceptions and 
 
 | Problem | Fix |
 | --- | --- |
-| Composer cannot find `relaywa/sdk` | Check Packagist publication and release status; use a local path repository for pre-release testing. |
+| Composer cannot find `relaywa/sdk` | Confirm Composer can reach [Packagist](https://packagist.org/packages/relaywa/sdk), check your PHP version/extensions, then run `composer clear-cache` if metadata is stale. |
 | `Class "RelayWA\\Client" not found` | Run `composer install` and include `vendor/autoload.php`. |
 | Request rejected (401/403) | Check the key, account permissions, and session connection. |
 | No response / `curl_init()` missing | Confirm `ext-curl` is enabled and check DNS, HTTPS connectivity, and firewall settings. |
@@ -186,7 +190,7 @@ The SDK uses a 30-second request timeout, 10-second connection timeout, and disa
 
 ## Maintainer publishing note
 
-After CI validation, tag an installable release and register this repository on Packagist. Keep tags and package metadata aligned.
+The package is already published on Packagist. For future versions, validate CI before tagging and keep tags and package metadata aligned.
 
 ## License
 
